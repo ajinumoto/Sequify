@@ -11,10 +11,11 @@ Generate valid `js-sequence-diagrams` grammar, compile vector PDF and PNG artifa
 
 ## 1. Core Policies
 
-- **Code Grounding & Adaptation**: Ground all participants, methods, endpoints, parameters, and flows strictly in the repository source code. Dynamically adapt naming, layers, and granularity to the target project's tech stack (Swift, Kotlin, Go, TypeScript, Python, etc.) and architectural patterns (MVC, MVVM, Clean Architecture, Hexagonal, Microservices, Event-Driven). Annotate unverified external systems with `Note over Service: External (unverified)`.
-- **Language**: **English by default**. Translate only when explicitly requested by the user.
-- **Redaction**: Replace credentials, tokens, and secrets with generic placeholders (e.g., `Bearer <TOKEN>`, `X-Key: <REDACTED>`).
-- **Offline Safety**: 100% local macOS WebKit rendering with subresource integrity (SRI) verification.
+- **User Intent & Framing Priority**: If the prompt specifies custom participant names, ordering, or specific flow slices (e.g. *"happy path only"*, *"focus on retry & error handling"*, *"database/cache flow only"*), **strictly prioritize the user's explicit framing** over auto-detected defaults.
+- **Code Grounding & Adaptation**: Ground all participants, methods, endpoints, parameters, and flows strictly in the repository source code. Dynamically adapt naming, layers, and granularity to the target project's tech stack (Swift, Kotlin, Go, TypeScript, Python, Rust, etc.) and architectural patterns (MVC, MVVM, Clean Architecture, Hexagonal, Microservices, Event-Driven). Annotate unverified external systems with `Note over Service: External (unverified)`.
+- **Bilingual Response Behavior**: Diagram grammar, participant identifiers, and code signatures **MUST** strictly remain in **English**. Explanations, chat walkthroughs, and markdown narratives adapt naturally to the user's conversation language.
+- **Iterative Refinement**: When the user requests adjustments to an existing diagram, modify and recompile the existing `.seq` file incrementally without restarting from scratch.
+- **Redaction & Offline Safety**: Redact credentials and private tokens (`Bearer <TOKEN>`, `X-Key: <REDACTED>`). 100% local macOS WebKit rendering with Subresource Integrity (SRI) verification.
 
 ---
 
@@ -24,7 +25,7 @@ If no mode is specified, follow the user's prompt dynamically. When explicit, ad
 
 | Mode | Aliases | Target Audience & Style | Supporting Table |
 | :--- | :--- | :--- | :--- |
-| **`default`** | *(None)* | Prompt-driven; matches user's explicit request. | Dynamic / Prompt-driven |
+| **`default`** | *(None)* | Prompt-driven; matches user's explicit request and framing. | Dynamic / Prompt-driven |
 | **`layman`** | `non-technical`, `simple`, `basic`, `overview` | Non-technical stakeholders. Plain human terms (`"User"`, `"Mobile App"`). **No code, SQL, HTTP methods, or status codes.** | **User Journey**: Step \| User Action \| Screen Display \| Behind the Scenes |
 | **`operational`** | `ops`, `business`, `product`, `process` | PMs & Operations. Focus on business modules, state transitions (`PENDING` $\rightarrow$ `ACTIVE`), feature flags, validation gates, and SLA limits. | **Business Operational Matrix**: Step \| Domain \| State Change \| Business Rule \| Fallback |
 | **`network`** | `infra`, `infrastructure`, `devops`, `networking` | Network / DevOps. **Frontend codebase**: Client-side traffic only (`URLSession`, headers, caching, retries). **Backend codebase**: Gateway, VPC, service mesh, proxies. | **Network Spec Table**: Step \| Caller \| Target Endpoint \| Headers & Payload \| HTTP Status \| Retry/Cache Behavior |
@@ -44,7 +45,7 @@ Control structural density and noise level via flags (`--format compact`, `--com
 ### Mode-Aware Rules for Compact Format (`--format compact`):
 1. **Noise & Boilerplate Elimination**: Remove pure pass-through wrappers, trivial getter/setter cascades, and verbose intermediate delegate bubbling.
 2. **Mode-Adapted Participant Abstraction**:
-   - **In Technical Mode**: **Do NOT collapse everything into a single API box.** Keep the core domain classes, controllers, engines, managers, algorithms, databases, and caches (e.g., `CustomHTTPProtocol`, `NetworkInjectionManager`, `Datasource`). Focus on critical method calls, decision branches (`shouldInjectFailure()`), and state changes.
+   - **In Technical Mode**: **Do NOT collapse everything into a single API box.** Keep the core domain classes, controllers, engines, managers, algorithms, databases, and caches. Focus on critical method calls, decision branches (`shouldInjectFailure()`), and state changes.
    - **In Network Mode**: Focus on endpoint transport boundaries, omitting intra-app view lifecycle hops.
    - **In Operational Mode**: Focus on domain boundary state changes (`PENDING` $\rightarrow$ `ACTIVE`).
    - **In Layman Mode**: Focus on primary user touchpoints and visible outcomes.
@@ -60,8 +61,10 @@ Control structural density and noise level via flags (`--format compact`, `--com
 Strictly adhere to Andrew Brampton's grammar (`bramp.github.io/js-sequence-diagrams`):
 - **Title**: `Title: <Title Text>`
 - **Participants**: `participant <ActorName>` or `participant "<Actor Name>"` *(Unsupported: `as`, `activate/deactivate`, `alt/else`, `loop`)*.
+  - **Syntax Safety**: Always enclose names containing spaces, hyphens, dots, or symbols in double quotes (e.g., `participant "User Service"`, `participant "HTTP.Datasource"`).
 - **Signals**: `->` (solid arrow), `-->` (dotted arrow), `->>` (open solid), `-->>` (open dotted), `-` (solid line), `--` (dotted line).
-- **Notes**: `Note left of Actor: Text`, `Note right of Actor: Text`, `Note over Actor: Text`, `Note over Actor1,Actor2: Text` *(Use `\n` for multiline)*.
+- **Notes**: `Note left of Actor: Text`, `Note right of Actor: Text`, `Note over Actor: Text`, `Note over Actor1,Actor2: Text`.
+  - **Multiline Notes**: Use explicit `\n` for line breaks inside notes (never use physical raw line breaks inside a Note declaration).
 - **Comments**: `# Comment`
 - **Sizing / Splitting**: If flow exceeds $>5-6$ participants or multiple distinct channels, split into modular method-specific sub-diagrams.
 
