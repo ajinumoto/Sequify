@@ -1,5 +1,7 @@
 # Compiled binaries
+sequify/scripts/sequify-cli
 diagram/scripts/diagram-cli
+scripts/sequify-cli
 *.o
 *.dSYM
 

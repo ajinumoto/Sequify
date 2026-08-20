@@ -192,10 +192,12 @@ sequenceDiagram
 
 ## 🔒 Security & Privacy
 
-Sequify is designed with security and privacy by design:
+Sequify is built from the ground up adhering to enterprise AI skill security best practices:
 - **⚡ 100% Local & Offline**: All rendering is executed locally via macOS WebKit without any outbound network calls or cloud telemetry.
-- **🛡️ Sandboxed & Escaped**: Diagram inputs are serialized via strict JSON boundaries to prevent script breakout, HTML injection, or command tampering.
-- **🔒 Privacy-Preserving API Documentation**: Skill rules strictly require the redaction of real authorization tokens, bearer credentials, and cryptographic signatures.
+- **🛡️ Cryptographic Subresource Integrity (SRI)**: All bundled offline vendor scripts (`Snap.svg`, `Underscore`, `js-sequence-diagrams`) and fonts are verified against hardcoded SHA-256 cryptographic checksums before DOM injection.
+- **📦 Zero-Binary Source Distribution**: Repositories ship strictly as clean, transparent Swift source code (`render_diagram.swift`), eliminating untrusted precompiled binary risks.
+- **🔒 Sandboxed & Escaped**: Diagram inputs are size-bounded (max 512 KB) and serialized via strict JSON boundaries to prevent script breakout, HTML injection, or command tampering.
+- **🔑 Privacy-Preserving API Documentation**: Skill rules strictly mandate the redaction of real authorization tokens, bearer credentials, and cryptographic signatures.
 
 ---
 
@@ -218,9 +220,8 @@ sequify/
     │       ├── sequence-diagram-snap-min.js
     │       └── svginnerhtml.min.js
     └── scripts/
-        ├── render_diagram.swift # Swift WebKit headless renderer
-        ├── sequify-cli         # Precompiled native binary
-        └── compile.sh           # Compilation helper
+        ├── render_diagram.swift # Swift WebKit headless renderer (with SHA-256 SRI)
+        └── compile.sh           # Local compilation helper
 ```
 
 ---

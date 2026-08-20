@@ -1,6 +1,7 @@
 import Cocoa
 import WebKit
 import Foundation
+import CryptoKit
 
 // Initialize Headless Cocoa App
 let app = NSApplication.shared
@@ -19,7 +20,7 @@ struct Options {
 
 func printHelp() {
     print("""
-    Usage: sequify-cli [options]
+    Usage: sequify-cli [options] / swift render_diagram.swift [options]
     
     Options:
       -i, --input <file>        Input sequence diagram text file (reads stdin if omitted or '-')
@@ -115,36 +116,42 @@ if diagramSource.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
     exit(1)
 }
 
-// MARK: - Locate Vendor Resources
+// Input size boundary check (max 512 KB) to prevent resource exhaustion / DoS
+let maxDiagramBytes = 512 * 1024
+if diagramSource.utf8.count > maxDiagramBytes {
+    fputs("Error: Sequence diagram input exceeds maximum allowed size (512 KB).\n", stderr)
+    exit(1)
+}
+
+// MARK: - Cryptographic Vendor Integrity Hashes (SHA-256)
+let expectedVendorHashes: [String: String] = [
+    "ArchitectsDaughter-Regular.ttf": "6159718a08898e34bc1cb7354086141a5f9a70b73e54dbec27ead0d59a697359",
+    "sequence-diagram-snap-min.js": "115a5a788eb973e7769a5473c6c9c9b7559f4159016745c229a9e3fae23cf7a8",
+    "snap.svg-min.js": "86e81b5129457e636670017ed841b4ef3f85e3ee159fac9aea79da91335a4c5f",
+    "svginnerhtml.min.js": "c83766ba7e847c2682223ae9cae26882b072c5ec5b7d99985e58c1122547f924",
+    "underscore-min.js": "a1b6400a21ddee090e93d8882ffa629963132785bfa41b0abbea199d278121e9"
+]
+
+// MARK: - Locate Vendor Resources (Restricted Path Discovery)
 func findVendorDirectory() -> URL {
     let fm = FileManager.default
     
-    // 1. Check relative to binary executable
-    let execURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[0]).deletingLastPathComponent()
+    // 1. Check relative to current executable or script location
+    let execURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent()
     let relativeVendor = execURL.appendingPathComponent("../resources/vendor").standardized
     if fm.fileExists(atPath: relativeVendor.appendingPathComponent("underscore-min.js").path) {
         return relativeVendor
     }
     
-    // 2. Check standard user skill directories
-    let homeDir = fm.homeDirectoryForCurrentUser
-    let candidateDirs = [
-        homeDir.appendingPathComponent(".agents/skills/sequify/resources/vendor"),
-        homeDir.appendingPathComponent(".gemini/config/skills/sequify/resources/vendor"),
-        homeDir.appendingPathComponent(".agents/skills/diagrify/resources/vendor"),
-        homeDir.appendingPathComponent(".gemini/config/skills/diagrify/resources/vendor"),
-        homeDir.appendingPathComponent(".gemini/config/skills/diagram/resources/vendor")
-    ]
-    for dir in candidateDirs {
-        if fm.fileExists(atPath: dir.appendingPathComponent("underscore-min.js").path) {
-            return dir
-        }
-    }
-    
-    // 3. Fallback: current working directory
-    let cwdVendor = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("resources/vendor")
+    // 2. Check relative to current working directory
+    let cwdVendor = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("resources/vendor").standardized
     if fm.fileExists(atPath: cwdVendor.appendingPathComponent("underscore-min.js").path) {
         return cwdVendor
+    }
+    
+    let cwdSequifyVendor = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("sequify/resources/vendor").standardized
+    if fm.fileExists(atPath: cwdSequifyVendor.appendingPathComponent("underscore-min.js").path) {
+        return cwdSequifyVendor
     }
     
     fputs("Error: Could not locate vendor resources directory.\n", stderr)
@@ -153,46 +160,66 @@ func findVendorDirectory() -> URL {
 
 let vendorDir = findVendorDirectory()
 
-func loadVendorFile(_ filename: String) -> String {
-    let fileURL = vendorDir.appendingPathComponent(filename)
-    do {
-        return try String(contentsOf: fileURL, encoding: .utf8)
-    } catch {
-        return ""
+func loadAndVerifyVendorData(_ filename: String) -> Data {
+    guard let expectedHash = expectedVendorHashes[filename] else {
+        fputs("Security Error: No integrity hash registered for vendor file '\(filename)'.\n", stderr)
+        exit(1)
     }
+    
+    let fileURL = vendorDir.appendingPathComponent(filename)
+    guard let data = try? Data(contentsOf: fileURL) else {
+        fputs("Error: Unable to load vendor file at '\(fileURL.path)'.\n", stderr)
+        exit(1)
+    }
+    
+    let computedDigest = SHA256.hash(data: data)
+    let computedHash = computedDigest.map { String(format: "%02x", $0) }.joined()
+    
+    if computedHash.lowercased() != expectedHash.lowercased() {
+        fputs("Security Error: Cryptographic integrity check failed for vendor resource '\(filename)'.\nExpected SHA-256: \(expectedHash)\nFound SHA-256:    \(computedHash)\n", stderr)
+        exit(1)
+    }
+    
+    return data
 }
 
-let snapJS = loadVendorFile("snap.svg-min.js")
-let underscoreJS = loadVendorFile("underscore-min.js")
-let sequenceJS = loadVendorFile("sequence-diagram-snap-min.js")
-let svgInnerJS = loadVendorFile("svginnerhtml.min.js")
+func loadAndVerifyVendorString(_ filename: String) -> String {
+    let data = loadAndVerifyVendorData(filename)
+    guard let str = String(data: data, encoding: .utf8) else {
+        fputs("Error: Vendor file '\(filename)' is not valid UTF-8.\n", stderr)
+        exit(1)
+    }
+    return str
+}
+
+let snapJS = loadAndVerifyVendorString("snap.svg-min.js")
+let underscoreJS = loadAndVerifyVendorString("underscore-min.js")
+let sequenceJS = loadAndVerifyVendorString("sequence-diagram-snap-min.js")
+let svgInnerJS = loadAndVerifyVendorString("svginnerhtml.min.js")
 
 // Base64 encode Architects Daughter font for offline hand-drawn theme rendering
-let archFontFile = vendorDir.appendingPathComponent("ArchitectsDaughter-Regular.ttf")
-var embeddedFontCSS = ""
-if let fontData = try? Data(contentsOf: archFontFile) {
-    let b64 = fontData.base64EncodedString()
-    embeddedFontCSS = """
-    @font-face {
-        font-family: 'Architects Daughter';
-        src: url('data:font/truetype;charset=utf-8;base64,\(b64)') format('truetype');
-        font-weight: normal;
-        font-style: normal;
-    }
-    @font-face {
-        font-family: 'danielbd';
-        src: url('data:font/truetype;charset=utf-8;base64,\(b64)') format('truetype');
-        font-weight: normal;
-        font-style: normal;
-    }
-    @font-face {
-        font-family: 'daniel';
-        src: url('data:font/truetype;charset=utf-8;base64,\(b64)') format('truetype');
-        font-weight: normal;
-        font-style: normal;
-    }
-    """
+let fontData = loadAndVerifyVendorData("ArchitectsDaughter-Regular.ttf")
+let b64 = fontData.base64EncodedString()
+let embeddedFontCSS = """
+@font-face {
+    font-family: 'Architects Daughter';
+    src: url('data:font/truetype;charset=utf-8;base64,\(b64)') format('truetype');
+    font-weight: normal;
+    font-style: normal;
 }
+@font-face {
+    font-family: 'danielbd';
+    src: url('data:font/truetype;charset=utf-8;base64,\(b64)') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'daniel';
+    src: url('data:font/truetype;charset=utf-8;base64,\(b64)') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+"""
 
 // MARK: - HTML Builder
 func buildHTML(diagramText: String, theme: String, title: String) -> String {
