@@ -1,0 +1,9 @@
+# Compiled binaries
+diagram/scripts/diagram-cli
+*.o
+*.dSYM
+
+# OS files
+.DS_Store
+*.swp
+*~

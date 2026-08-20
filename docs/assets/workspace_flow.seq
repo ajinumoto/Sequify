@@ -1,0 +1,17 @@
+Title: Workspace Creation & Task Setup Flow
+participant User
+participant "Web Dashboard"
+participant "API Gateway"
+participant "Workspace Service"
+participant "Main Database"
+participant "Message Queue"
+
+User->Web Dashboard: Click "Create Workspace"
+Web Dashboard->API Gateway: POST /api/workspaces
+API Gateway->Workspace Service: Provision Workspace (payload)
+Workspace Service->Main Database: INSERT INTO workspaces (...)
+Main Database-->>Workspace Service: 201 Created (workspace_id)
+Workspace Service->Message Queue: Publish event "workspace.created"
+Workspace Service-->>API Gateway: 201 Created (workspace_id, slug)
+API Gateway-->>Web Dashboard: 201 Created (workspace_id, slug)
+Web Dashboard-->>User: Redirect to Workspace Dashboard
