@@ -11,7 +11,7 @@ Generate valid `js-sequence-diagrams` grammar, compile vector PDF and PNG artifa
 
 ## 1. Core Policies
 
-- **Code Grounding**: All participants, methods, endpoints, parameters, and flows **MUST** be verified from repository source code. Never hallucinate or assume non-existent classes or routes. Annotate unverified external systems with `Note over Service: External (unverified)`.
+- **Code Grounding & Adaptation**: Ground all participants, methods, endpoints, parameters, and flows strictly in the repository source code. Dynamically adapt naming, layers, and granularity to the target project's tech stack (Swift, Kotlin, Go, TypeScript, Python, etc.) and architectural patterns (MVC, MVVM, Clean Architecture, Hexagonal, Microservices, Event-Driven). Annotate unverified external systems with `Note over Service: External (unverified)`.
 - **Language**: **English by default**. Translate only when explicitly requested by the user.
 - **Redaction**: Replace credentials, tokens, and secrets with generic placeholders (e.g., `Bearer <TOKEN>`, `X-Key: <REDACTED>`).
 - **Offline Safety**: 100% local macOS WebKit rendering with subresource integrity (SRI) verification.
@@ -34,50 +34,24 @@ If no mode is specified, follow the user's prompt dynamically. When explicit, ad
 
 ## 3. Format Modifiers: Standard vs Compact
 
-Control structural density via flags (`--format compact`, `--compact`, `-c`, `condensed`, `concise`):
+Control structural density and noise level via flags (`--format compact`, `--compact`, `-c`, `condensed`, `concise`):
 
 | Format | Scope & Behavior | Best For |
 | :--- | :--- | :--- |
-| **`standard`** (Default) | Full multi-layer tracing (`UI` $\rightarrow$ `ViewModel` $\rightarrow$ `NetworkService` $\rightarrow$ `API`). Captures local calls, state mutations, and header notes. | Deep code audits & internal debugging. |
-| **`compact`** | **Concise & to the point**: Collapses internal client layers into 1 caller (`"iOS App (Client)"`), direct signals to dedicated target APIs, numbered milestone notes. | Architecture overviews, PR reviews & RFCs. |
+| **`standard`** (Default) | **Exhaustive Multi-Tier Tracing**: Captures every local layer hop (`UI` $\rightarrow$ `ViewModel` $\rightarrow$ `NetworkService` $\rightarrow$ `Engine`), state flag mutation, getter/setter bubbling, and detailed header notes. | Deep code audits, step-by-step debugging, and intra-module tracing. |
+| **`compact`** | **Milestone & Substance-Driven**: Strips away repetitive glue code, trivial pass-throughs, and boilerplate bubbling. **Preserves core domain/technical actors, critical decisions, and milestone states.** | Architecture overviews, technical RFCs, and cross-team reviews. |
 
-### Rules for Compact Format (`--format compact`):
-1. **Collapse Client Tiers**: Group internal layers (`UI`, `ViewModel`, `NetworkService`, `Repository`) into a single caller participant (e.g. `participant "iOS App (Client)"`).
-2. **Direct Target Signals**: Draw signals directly between caller and target APIs/services. Eliminate local function hops and response bubbling.
-3. **Preserve Dedicated Target Separation**: Keep distinct APIs and services isolated (e.g. `participant "Remote Backend API"`, `participant "HTTP Datasource"`).
-4. **Numbered Milestone Notes**: Replace verbose header/auth notes with numbered milestones (e.g. `Note over "iOS App (Client)","DebugSwift Engine": 1. Intercept & Apply Rewrite Rule`).
-5. **Clean Labels**: Concise method + endpoint (`URLRequest: /users/profile`, `POST /auth/login`) and status + model summary (`200 OK (User Profile)`).
-6. **Cross-Mode Compatible**: Combines with any mode (e.g., `--mode network --format compact`).
-
-#### Standard vs Compact Comparison:
-```sequence
-# Standard (Detailed)
-Title: DebugSwift Network Injection (Standard)
-participant "iOS App (URLSession)"
-participant "CustomHTTPProtocol"
-participant "NetworkInjectionManager"
-participant "URLProtocolClient"
-
-"iOS App (URLSession)"->"CustomHTTPProtocol": startLoading() [URLRequest: /users/profile]
-"CustomHTTPProtocol"->"NetworkInjectionManager": applyDelayIfNeeded(for: request)
-"CustomHTTPProtocol"->"NetworkInjectionManager": matchingRewriteRule(for: request)
-"NetworkInjectionManager"-->"CustomHTTPProtocol": RewriteRule(url: "*/users/*", shortCircuit: true)
-"CustomHTTPProtocol"->"URLProtocolClient": didReceive(HTTPURLResponse status: 200 OK)
-"URLProtocolClient"-->"iOS App (URLSession)": Completion Handler (Mock Profile)
-```
-```sequence
-# Compact (--format compact)
-Title: DebugSwift Network Injection (Compact)
-participant "iOS App (Client)"
-participant "DebugSwift Engine"
-participant "HTTP Datasource"
-
-Note over "iOS App (Client)","DebugSwift Engine": 1. Intercept & Apply Rewrite Rule
-"iOS App (Client)"->"DebugSwift Engine": URLRequest: /users/profile
-"DebugSwift Engine"-->"iOS App (Client)": 200 OK (Rewritten Mock Profile)
-Note over "DebugSwift Engine","HTTP Datasource": 2. Record Metrics
-"DebugSwift Engine"->"HTTP Datasource": Log Mock Transaction (1.50s)
-```
+### Mode-Aware Rules for Compact Format (`--format compact`):
+1. **Noise & Boilerplate Elimination**: Remove pure pass-through wrappers, trivial getter/setter cascades, and verbose intermediate delegate bubbling.
+2. **Mode-Adapted Participant Abstraction**:
+   - **In Technical Mode**: **Do NOT collapse everything into a single API box.** Keep the core domain classes, controllers, engines, managers, algorithms, databases, and caches (e.g., `CustomHTTPProtocol`, `NetworkInjectionManager`, `Datasource`). Focus on critical method calls, decision branches (`shouldInjectFailure()`), and state changes.
+   - **In Network Mode**: Focus on endpoint transport boundaries, omitting intra-app view lifecycle hops.
+   - **In Operational Mode**: Focus on domain boundary state changes (`PENDING` $\rightarrow$ `ACTIVE`).
+   - **In Layman Mode**: Focus on primary user touchpoints and visible outcomes.
+3. **Preserve Dedicated Target Separation**: Keep distinct microservices, third-party systems, and data stores clearly separated.
+4. **Numbered Milestone Notes**: Group interactions into numbered logical phases (e.g., `Note over Interceptor,Engine: 1. Rule Evaluation & Delay Injection`).
+5. **Succinct Labels**: Clean method calls, signatures, and concise model summaries instead of verbose raw payload dumps.
+6. **Cross-Mode Compatible**: Seamlessly combines with any active mode (`--mode technical --format compact`, `--mode network --compact`, etc.).
 
 ---
 
