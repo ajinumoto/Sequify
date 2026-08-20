@@ -57,14 +57,14 @@ Sequify provides **4 specialized diagram modes** alongside a prompt-driven defau
 > [!NOTE]
 > **Default Language**: All diagram titles, participant names, notes, tables, and explanations are generated in **English** by default. If you explicitly request another language (e.g. *"generate in Indonesian"*), Sequify translates the content while preserving all structure and grammar rules.
 
-When a specific mode is requested, Sequify adjusts participant abstraction, terminology, signal depth, and supporting tables for the target persona:
+When a specific mode is requested, Sequify adjusts participant abstraction, terminology, signal depth, and supporting tables for the target persona, **dynamically adapted to your codebase type (Frontend/Mobile vs Backend/Infra)**:
 
 | Mode | Trigger Flags & Aliases | Target Audience | Participant Abstraction | Supporting Table Output |
 | :--- | :--- | :--- | :--- | :--- |
 | **`default`** | *(None)* | General / Prompt-driven | As specified in user prompt | Prompt-driven |
 | **`layman`** | `--mode layman`, `-m layman`, `non-technical`, `simple`, `basic` | End-users, non-technical stakeholders (Zero code & product knowledge) | Plain, human-friendly terms (`"User"`, `"Mobile App"`, `"Payment Service"`) | **User Journey Step Table** (Action, Screen Display, Behind the Scenes) |
-| **`operational`** | `--mode operational`, `-m operational`, `ops`, `business`, `product` | PMs & Operations (Deep product knowledge, minimal code knowledge) | Business domains & modules (`"Subscription Module"`, `"Payment Partner"`, `"Access Control"`) | **Business Operational Matrix** (Domain, State Change, Business Rule, Fallback) |
-| **`network`** | `--mode network`, `-m network`, `infra`, `devops`, `networking` | Network Engineers, Cloud Architects, SecOps, DevOps, SRE | Infrastructure nodes & zones (`"Cloudflare Edge"`, `"Ingress ALB"`, `"VPC Subnet"`) | **Network & Security Table** (Source/Dest Zone, Protocol/Port, TLS, WAF, SLA) |
+| **`operational`** | `--mode operational`, `-m operational`, `ops`, `business`, `product` | PMs & Operations (Deep product knowledge, minimal code knowledge) | Business domains & state rules (`"UI State"`, `"Subscription Module"`, `"Feature Flags"`) | **Business Operational Matrix** (Domain, State Change, Business Rule, Fallback) |
+| **`network`** | `--mode network`, `-m network`, `infra`, `devops`, `networking` | Network Engineers, DevOps, SecOps, & Developers | Context-adaptive: Client traffic (`"URLSession"`, `"HTTP Client"`) or Cloud Infra (`"Ingress"`, `"Gateway"`) | **Client Network Traffic Table** (Frontend) or **Network Boundary Table** (Backend) |
 | **`technical`** | `--mode technical`, `-m technical`, `tech`, `code`, `engineering` | Software Engineers, Architects, Tech Leads (Deep code & product knowledge) | Dedicated API endpoints, controllers, DBs, caches (`"SubscriptionController"`, `"Redis"`) | **Structured API & Model Table** (HTTP Method, Path, Headers, Payload, DB Ops) |
 
 ---
@@ -98,6 +98,7 @@ Strictly generates only **3 core files** per diagram:
   - `simple`: Modern, clean vector lines and crisp sans-serif typography.
   - `hand`: Expressive hand-drawn sketch style with embedded Architects Daughter font.
 - **🔒 Dedicated API Separation**: Automatically isolates backend microservices into dedicated participant headers instead of generic backend blocks.
+- **🔍 Code-Grounded & Zero Hallucination**: Strictly treats your codebase as the sole source of truth—never hallucinating non-existent classes, endpoints, or speculative flows.
 
 ---
 
@@ -242,6 +243,7 @@ Sequify is built from the ground up adhering to enterprise AI skill security bes
 - **📦 Zero-Binary Source Distribution**: Repositories ship strictly as clean, transparent Swift source code (`render_diagram.swift`), eliminating untrusted precompiled binary risks.
 - **🔒 Sandboxed & Escaped**: Diagram inputs are size-bounded (max 512 KB) and serialized via strict JSON boundaries to prevent script breakout, HTML injection, or command tampering.
 - **🔑 Privacy-Preserving API Documentation**: Skill rules strictly mandate the redaction of real authorization tokens, bearer credentials, and cryptographic signatures.
+- **🎯 Code as Sole Source of Truth**: Diagrams and architectural specifications are strictly verified against actual codebase files, eliminating speculative, assumed, or fabricated flows.
 
 ---
 
