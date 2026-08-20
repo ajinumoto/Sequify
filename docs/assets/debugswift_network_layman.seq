@@ -1,0 +1,14 @@
+Title: How DebugSwift Intercepts App Traffic (Layman Mode)
+participant "App User"
+participant "Mobile App"
+participant "DebugSwift Inspector"
+participant "Mock Test Engine"
+participant "Real Internet Server"
+
+"App User"->"Mobile App": Tap "View Profile" Button
+"Mobile App"->"DebugSwift Inspector": Prepare to send request to the Internet
+"DebugSwift Inspector"->"Mock Test Engine": Does developer have a test rule for this?
+"Mock Test Engine"-->"DebugSwift Inspector": Yes! Use local test profile data
+Note over "DebugSwift Inspector": Block real internet request\n(No data sent over WiFi/Cellular)
+"DebugSwift Inspector"-->"Mobile App": Return instant test profile (VIP Status)
+"Mobile App"-->"App User": Display VIP Screen on device immediately

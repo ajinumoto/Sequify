@@ -1,0 +1,13 @@
+Title: DebugSwift Network Layer & Traffic Interception (Network Mode)
+participant "Application Layer\n(URLSessionTask)"
+participant "L7 URLProtocol\n(CustomHTTPProtocol)"
+participant "Injection Engine\n(Latency & Error)"
+participant "Socket / TCP Stack\n(Darwin Kernel)"
+participant "Edge Gateway\n(TLS 1.3 / HTTPS)"
+
+"Application Layer\n(URLSessionTask)"->"L7 URLProtocol\n(CustomHTTPProtocol)": Intercept Outbound URLRequest
+"L7 URLProtocol\n(CustomHTTPProtocol)"->"Injection Engine\n(Latency & Error)": Check Failure Injection (Rate: 10%)
+Note over "Injection Engine\n(Latency & Error)": Simulated Network Error:\nNSURLErrorTimedOut (-1001)
+"Injection Engine\n(Latency & Error)"-->"L7 URLProtocol\n(CustomHTTPProtocol)": Drop Connection / Inject Error
+Note over "L7 URLProtocol\n(CustomHTTPProtocol)": Abort Socket Synthesis:\nZero TCP Packets Transmitted
+"L7 URLProtocol\n(CustomHTTPProtocol)"-->"Application Layer\n(URLSessionTask)": Propagate URLError(code: -1001)

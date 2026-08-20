@@ -1,0 +1,21 @@
+Title: DebugSwift Network Injection & Interception Flow (Technical Scope)
+participant "iOS App (URLSession)"
+participant "CustomHTTPProtocol"
+participant "NetworkInjectionManager"
+participant "Remote Backend API"
+participant "URLProtocolClient"
+participant "HTTP.Datasource"
+
+"iOS App (URLSession)"->"CustomHTTPProtocol": startLoading() [URLRequest: /api/v2/users/me]
+"CustomHTTPProtocol"->"NetworkInjectionManager": applyDelayIfNeeded(for: request)
+Note over "NetworkInjectionManager": Check DelayConfig (matches: true)\nThread.sleep(1.50s latency)
+"CustomHTTPProtocol"->"NetworkInjectionManager": shouldInjectFailure(for: request)
+"NetworkInjectionManager"-->"CustomHTTPProtocol": (shouldInject: false, error: nil)
+"CustomHTTPProtocol"->"NetworkInjectionManager": matchingRewriteRule(for: request)
+"NetworkInjectionManager"-->"CustomHTTPProtocol": RewriteRule(url: "*/v2/users/*", shortCircuit: true)
+Note over "CustomHTTPProtocol": Short-Circuit Enabled:\nBypass remote network call
+"CustomHTTPProtocol"->"URLProtocolClient": didReceive(HTTPURLResponse status: 200 OK)
+"CustomHTTPProtocol"->"URLProtocolClient": didLoad(rewrittenMockJSONData)
+"CustomHTTPProtocol"->"URLProtocolClient": urlProtocolDidFinishLoading()
+"CustomHTTPProtocol"->"HTTP.Datasource": recordRequest(HTTPModel: mocked, duration: 1.50s)
+"URLProtocolClient"-->"iOS App (URLSession)": Completion Handler (Decoded Mock User Profile)

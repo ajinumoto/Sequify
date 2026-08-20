@@ -1,0 +1,12 @@
+Title: DebugSwift Network Injection Architecture
+participant "URLSession"
+participant "CustomHTTPProtocol"
+participant "InjectionManager"
+participant "Backend Server"
+participant "DebugUI"
+
+URLSession->"CustomHTTPProtocol": startLoading()
+"CustomHTTPProtocol"->"InjectionManager": Check Delay & Rules
+Note over "InjectionManager": Inject 1.5s Latency\n& Mock 200 OK JSON
+"CustomHTTPProtocol"-->URLSession: Return Mock Data
+"CustomHTTPProtocol"->"DebugUI": Update Traffic History

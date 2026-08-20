@@ -1,0 +1,15 @@
+Title: DebugSwift Network Simulation & Mocking (Operational Mode)
+participant "QA / Developer"
+participant "DebugSwift In-App UI"
+participant "Injection Manager"
+participant "Rule Storage"
+participant "App Network Layer"
+
+"QA / Developer"->"DebugSwift In-App UI": Enable Response Rewrite (Rule: VIP Profile)
+"DebugSwift In-App UI"->"Rule Storage": Persist RewriteRule (URL: "/api/user", Status: 200)
+"DebugSwift In-App UI"->"Injection Manager": setRewriteConfig(enabled: true)
+"App Network Layer"->"Injection Manager": Evaluate Outgoing Request (/api/user)
+"Injection Manager"->"Injection Manager": Rule Match: Exact URL & HTTP GET
+"Injection Manager"-->"App Network Layer": Return Mocked Payload & Status 200 OK
+"App Network Layer"-->"DebugSwift In-App UI": Stream Intercepted Event & Payload Diff
+"DebugSwift In-App UI"-->"QA / Developer": Display In-App Floating Toast & Badge "MOCKED"

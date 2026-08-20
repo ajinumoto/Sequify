@@ -14,7 +14,7 @@
   Transform code flows into <b>interactive visual diagrams</b>, <b>structured API specification tables</b>, and <b>printable vector PDF artifacts</b> — generated 100% offline in under 2 seconds.
 </p>
 
-[Installation](#-installation) • [Output Specs](#-output-specifications) • [Usage](#-usage-in-antigravity) • [Architecture](#-repository-architecture) • [License](#-license)
+[Installation](#-installation) • [Diagram Modes](#-diagram-modes) • [Output Specs](#-output-specifications) • [Usage](#-usage-in-antigravity) • [Architecture](#-repository-architecture) • [License](#-license)
 
 </div>
 
@@ -24,12 +24,12 @@
 
 When designing system architectures with AI coding assistants, standard text code blocks are difficult to share and review. 
 
-**Sequify** bridges this gap: with a single action (`/sequify`, `/sequence`, or `/diagram`), the AI analyzes your codebase, isolates microservices into dedicated participant headers, and automatically compiles the flow into **visual previews**, **API data contracts**, and **downloadable vector PDFs**.
+**Sequify** bridges this gap: with a single action (`/sequify`, `/sequence`, or `/diagram`), the AI analyzes your codebase, isolates microservices into dedicated participant headers, and automatically compiles the flow into **visual previews**, **structured data contracts**, and **downloadable vector PDFs**.
 
 ```
 ┌─────────────────┐       ┌─────────────────┐       ┌───────────────────────────────┐
-│   User Prompt   │ ───►  │ AI Code Analysis│ ───►  │        Sequify Engine         │
-│  "/sequify..."  │       │  & Grammar Gen  │       │  (Headless Native WebKit CLI) │
+│   User Prompt   │ ───►  │ Mode Resolution │ ───►  │        Sequify Engine         │
+│  "/sequify..."  │       │ & Grammar Gen   │       │  (Headless Native WebKit CLI) │
 └─────────────────┘       └─────────────────┘       └──────────────┬────────────────┘
                                                                    │
                                       ┌────────────────────────────┴────────────────────────────┐
@@ -38,11 +38,34 @@ When designing system architectures with AI coding assistants, standard text cod
                        │      Agent Chat Output      │                           │      Generated Artifacts    │
                        ├─────────────────────────────┤                           ├─────────────────────────────┤
                        │ • Native Visual Diagram     │                           │ • 📄 <flow>.pdf (Vector)   │
-                       │ • Structured API Table      │                           │ • 🖼️ <flow>.png (High-DPI) │
-                       │ • Concise Flow Summary      │                           │ • 📝 <flow>.seq (Grammar)   │
+                       │ • Mode Specification Table  │                           │ • 🖼️ <flow>.png (High-DPI) │
+                       │ • Concise Flow Walkthrough  │                           │ • 📝 <flow>.seq (Grammar)   │
                        │ • Direct Artifact Links     │                           │ • 📑 <flow>.md  (Document)  │
                        └─────────────────────────────┘                           └─────────────────────────────┘
 ```
+
+---
+
+## 🎯 Diagram Modes
+
+Sequify provides **4 specialized diagram modes** alongside a prompt-driven default mode:
+
+> [!IMPORTANT]
+> **Priority 1: Prompt-Driven Default Behavior**
+> By default (when no mode is specified), Sequify does **not** enforce any persona constraints. The generated diagram and documentation strictly follow your prompt's explicit requirements.
+
+> [!NOTE]
+> **Default Language**: All diagram titles, participant names, notes, tables, and explanations are generated in **English** by default. If you explicitly request another language (e.g. *"generate in Indonesian"*), Sequify translates the content while preserving all structure and grammar rules.
+
+When a specific mode is requested, Sequify adjusts participant abstraction, terminology, signal depth, and supporting tables for the target persona:
+
+| Mode | Trigger Flags & Aliases | Target Audience | Participant Abstraction | Supporting Table Output |
+| :--- | :--- | :--- | :--- | :--- |
+| **`default`** | *(None)* | General / Prompt-driven | As specified in user prompt | Prompt-driven |
+| **`layman`** | `--mode layman`, `-m layman`, `non-technical`, `simple`, `basic` | End-users, non-technical stakeholders (Zero code & product knowledge) | Plain, human-friendly terms (`"User"`, `"Mobile App"`, `"Payment Service"`) | **User Journey Step Table** (Action, Screen Display, Behind the Scenes) |
+| **`operational`** | `--mode operational`, `-m operational`, `ops`, `business`, `product` | PMs & Operations (Deep product knowledge, minimal code knowledge) | Business domains & modules (`"Subscription Module"`, `"Payment Partner"`, `"Access Control"`) | **Business Operational Matrix** (Domain, State Change, Business Rule, Fallback) |
+| **`network`** | `--mode network`, `-m network`, `infra`, `devops`, `networking` | Network Engineers, Cloud Architects, SecOps, DevOps, SRE | Infrastructure nodes & zones (`"Cloudflare Edge"`, `"Ingress ALB"`, `"VPC Subnet"`) | **Network & Security Table** (Source/Dest Zone, Protocol/Port, TLS, WAF, SLA) |
+| **`technical`** | `--mode technical`, `-m technical`, `tech`, `code`, `engineering` | Software Engineers, Architects, Tech Leads (Deep code & product knowledge) | Dedicated API endpoints, controllers, DBs, caches (`"SubscriptionController"`, `"Redis"`) | **Structured API & Model Table** (HTTP Method, Path, Headers, Payload, DB Ops) |
 
 ---
 
@@ -52,8 +75,8 @@ Sequify follows a clean, predictable two-tier output format:
 
 ### 1. In-Chat Agent Response
 * **Visual Diagram**: Rendered directly in chat via native agent diagram syntax (e.g. Mermaid sequence block) or high-DPI image preview.
-* **API Specifications Matrix**: Comprehensive table mapping Step Order, HTTP Method, Endpoint Path, Custom Headers, Request Payload / Query Params, and Response Data Models.
-* **Flow Explanation**: Clear architectural walkthrough highlighting concurrency, lifecycles, and database interactions.
+* **Mode-Specific Specifications Matrix**: Comprehensive table tailored to the active mode (User Journey / Business Matrix / Network Security Table / API Specifications Matrix).
+* **Flow Explanation**: Clear architectural walkthrough highlighting key steps for the target persona.
 * **Direct File Links**: Clickable links to open the generated PDF, image, and sequence files.
 
 ### 2. Export Artifacts & Files
@@ -122,71 +145,92 @@ git push
 
 ---
 
-## 🛠️ Usage in Antigravity
+## 🛠️ Usage in Antigravity: Real-World Case Study Across Modes
 
-Trigger Sequify by typing `/sequify`, `/sequence`, `/diagram`, or asking naturally:
+Trigger Sequify by typing `/sequify`, `/sequence`, `/diagram`, or asking naturally in your prompt. Below are visual examples of a **real-world production case study**—inspecting the **Network Injection & Interception Engine** from [DebugSwift](https://github.com/DebugSwift/DebugSwift) (`CustomHTTPProtocol` $\leftrightarrow$ `NetworkInjectionManager`) executed across different modes and themes:
+
+### 1. Technical Mode (`--mode technical`)
+> Complete technical flow of iOS networking interception: `CustomHTTPProtocol.startLoading()`, `NetworkInjectionManager` delay injection, failure evaluation, wildcard rewrite rule matching, local short-circuit response dispatch, and metrics logging to `HTTP.Datasource`.
 
 ```text
-/sequify
+/sequify --mode technical Inspect DebugSwift Network Injection and Interception flow
 ```
-> *"Sequify the workspace creation and initial task setup flow"*  
-> *"Create a sequence diagram for user authentication and permission checks with API specifications"*
-
-### Example Agent Response:
-
-```markdown
-### Workspace Creation & Task Setup Flow
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant WebApp as Web Dashboard
-    participant API as API Gateway
-    participant WorkspaceService as Workspace Service
-    participant DB as Main Database
-    participant EventQueue as Message Queue
-
-    User->>WebApp: Click "Create Workspace"
-    WebApp->>API: POST /api/workspaces
-    API->>WorkspaceService: Provision Workspace (payload)
-    WorkspaceService->>DB: INSERT INTO workspaces (...)
-    DB-->>WorkspaceService: 201 Created (workspace_id)
-    WorkspaceService->>EventQueue: Publish event "workspace.created"
-    WorkspaceService-->>API: 201 Created (workspace_id, slug)
-    API-->>WebApp: 201 Created (workspace_id, slug)
-    WebApp-->>User: Redirect to Workspace Dashboard
-```
-
-#### API Specifications Table
-
-| Step | HTTP Method | Endpoint Path | Standard Headers | Request Payload | Response Model |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **1** | `POST` | `/api/workspaces` | `Authorization: Bearer <TOKEN_REDACTED>`, `Content-Type: application/json` | `{"name": "Engineering Hub", "plan": "team"}` | `WorkspaceCreatedResponse` |
-| **2** | `GET` | `/api/workspaces/{id}/members` | `Authorization: Bearer <TOKEN_REDACTED>` | None (Path Parameter: `id`) | `MemberListResponse` |
-| **3** | `POST` | `/api/tasks` | `Authorization: Bearer <TOKEN_REDACTED>`, `X-Request-ID: req_771a` | `{"title": "Initial Setup", "assignee_id": "usr_99"}` | `TaskCreatedResponse` |
-| **4** | `POST` | `/api/webhooks/dispatch` | `X-Service-Token: <TOKEN_REDACTED>`, `Content-Type: application/json` | `{"event": "task.created", "task_id": "tsk_01"}` | `WebhookAckResponse` |
-
-#### Generated Visual Artifacts
 
 <p align="center">
-  <b>Modern Theme (Default: <code>--theme simple</code>)</b>
-  <br>
-  <img src="docs/assets/workspace_flow.png" alt="Sequify Modern Sequence Diagram Output" width="100%">
+  <img src="docs/assets/debugswift_network_technical.png" alt="Technical Mode DebugSwift Network Injection Sequence Diagram" width="100%">
 </p>
 
 <p align="center">
-  <b>Hand-Drawn Sketch Theme (<code>--theme hand</code>)</b>
-  <br>
-  <img src="docs/assets/workspace_flow_hand.png" alt="Sequify Hand Drawn Sequence Diagram Output" width="100%">
+  📄 <a href="docs/assets/debugswift_network_technical.pdf"><b>Download Vector PDF</b></a> • 🖼️ <a href="docs/assets/debugswift_network_technical.png"><b>View High-DPI PNG</b></a> • 📝 <a href="docs/assets/debugswift_network_technical.seq"><b>View Sequence Source (.seq)</b></a>
 </p>
 
-> [!TIP]
-> **Download Sample Artifacts**:
-> - 📄 [Download Vector PDF Sample (`workspace_flow.pdf`)](docs/assets/workspace_flow.pdf)
-> - 🖼️ [Download High-DPI PNG Sample (`workspace_flow.png`)](docs/assets/workspace_flow.png)
-> - 📝 [View Sequence Grammar (`workspace_flow.seq`)](docs/assets/workspace_flow.seq)
+---
+
+### 2. Operational Mode (`--mode operational`)
+> QA & Developer in-app debugging workflow: Enabling dynamic response rewrite rules via in-app UI, persisting rules to storage, intercepting live app network traffic, and surfacing floating mock badges and payload diffs.
+
+```text
+/sequify --mode operational DebugSwift Network simulation and response mocking
 ```
+
+<p align="center">
+  <img src="docs/assets/debugswift_network_operational.png" alt="Operational Mode DebugSwift Network Mocking Sequence Diagram" width="100%">
+</p>
+
+<p align="center">
+  📄 <a href="docs/assets/debugswift_network_operational.pdf"><b>Download Vector PDF</b></a> • 🖼️ <a href="docs/assets/debugswift_network_operational.png"><b>View High-DPI PNG</b></a> • 📝 <a href="docs/assets/debugswift_network_operational.seq"><b>View Sequence Source (.seq)</b></a>
+</p>
+
+---
+
+### 3. Network & Infrastructure Mode (`--mode network`)
+> Protocol layer, kernel socket synthesis, and network failure boundaries: Layer 7 `URLProtocol` registration, failure injection rate simulation (`NSURLErrorTimedOut -1001`), socket synthesis abort, and edge gateway bypass.
+
+```text
+/sequify --mode network DebugSwift Layer 7 protocol interception and error injection
+```
+
+<p align="center">
+  <img src="docs/assets/debugswift_network_network.png" alt="Network Mode DebugSwift Traffic Interception Sequence Diagram" width="100%">
+</p>
+
+<p align="center">
+  📄 <a href="docs/assets/debugswift_network_network.pdf"><b>Download Vector PDF</b></a> • 🖼️ <a href="docs/assets/debugswift_network_network.png"><b>View High-DPI PNG</b></a> • 📝 <a href="docs/assets/debugswift_network_network.seq"><b>View Sequence Source (.seq)</b></a>
+</p>
+
+---
+
+### 4. Layman Mode (`--mode layman`)
+> Simple, non-technical explanation: How DebugSwift catches mobile app requests before they leave the phone, checks for test settings, and returns instant mock data without using mobile data/WiFi.
+
+```text
+/sequify --mode layman How DebugSwift intercepts app traffic for testing
+```
+
+<p align="center">
+  <img src="docs/assets/debugswift_network_layman.png" alt="Layman Mode DebugSwift Traffic Interception Sequence Diagram" width="100%">
+</p>
+
+<p align="center">
+  📄 <a href="docs/assets/debugswift_network_layman.pdf"><b>Download Vector PDF</b></a> • 🖼️ <a href="docs/assets/debugswift_network_layman.png"><b>View High-DPI PNG</b></a> • 📝 <a href="docs/assets/debugswift_network_layman.seq"><b>View Sequence Source (.seq)</b></a>
+</p>
+
+---
+
+### 5. Hand-Drawn Sketch Theme (`--theme hand`)
+> Expressive whiteboard sketch styling with embedded Architects Daughter font for team onboarding, architecture walkthroughs, and RFC reviews.
+
+```text
+/sequify --theme hand DebugSwift Network Injection Architecture overview
+```
+
+<p align="center">
+  <img src="docs/assets/debugswift_network_hand.png" alt="Hand-Drawn Theme DebugSwift Network Architecture Diagram" width="100%">
+</p>
+
+<p align="center">
+  📄 <a href="docs/assets/debugswift_network_hand.pdf"><b>Download Vector PDF</b></a> • 🖼️ <a href="docs/assets/debugswift_network_hand.png"><b>View High-DPI PNG</b></a> • 📝 <a href="docs/assets/debugswift_network_hand.seq"><b>View Sequence Source (.seq)</b></a>
+</p>
 
 ---
 
