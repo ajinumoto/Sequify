@@ -132,26 +132,42 @@ let expectedVendorHashes: [String: String] = [
     "underscore-min.js": "a1b6400a21ddee090e93d8882ffa629963132785bfa41b0abbea199d278121e9"
 ]
 
-// MARK: - Locate Vendor Resources (Restricted Path Discovery)
+// MARK: - Locate Vendor Resources (Multi-Path Resolution with SHA-256 SRI)
 func findVendorDirectory() -> URL {
     let fm = FileManager.default
+    var candidateLocations: [URL] = []
     
-    // 1. Check relative to current executable or script location
+    // 1. Relative to #filePath (the Swift source file location when run as script or compiled)
+    let sourceFileURL = URL(fileURLWithPath: #filePath).resolvingSymlinksInPath().deletingLastPathComponent()
+    candidateLocations.append(sourceFileURL.appendingPathComponent("../resources/vendor").standardized)
+    
+    // 2. Relative to CommandLine.arguments[0] (when run as script or binary)
+    if let firstArg = CommandLine.arguments.first {
+        let firstArgURL = URL(fileURLWithPath: firstArg).resolvingSymlinksInPath().deletingLastPathComponent()
+        candidateLocations.append(firstArgURL.appendingPathComponent("../resources/vendor").standardized)
+    }
+    
+    // 3. Relative to ProcessInfo executable path
     let execURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent()
-    let relativeVendor = execURL.appendingPathComponent("../resources/vendor").standardized
-    if fm.fileExists(atPath: relativeVendor.appendingPathComponent("underscore-min.js").path) {
-        return relativeVendor
-    }
+    candidateLocations.append(execURL.appendingPathComponent("../resources/vendor").standardized)
     
-    // 2. Check relative to current working directory
-    let cwdVendor = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("resources/vendor").standardized
-    if fm.fileExists(atPath: cwdVendor.appendingPathComponent("underscore-min.js").path) {
-        return cwdVendor
-    }
+    // 4. Current working directory variants
+    let cwd = URL(fileURLWithPath: fm.currentDirectoryPath)
+    candidateLocations.append(cwd.appendingPathComponent("resources/vendor").standardized)
+    candidateLocations.append(cwd.appendingPathComponent("sequify/resources/vendor").standardized)
+    candidateLocations.append(cwd.appendingPathComponent(".agents/skills/sequify/resources/vendor").standardized)
+    candidateLocations.append(cwd.appendingPathComponent(".agents/skills/diagram/resources/vendor").standardized)
     
-    let cwdSequifyVendor = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("sequify/resources/vendor").standardized
-    if fm.fileExists(atPath: cwdSequifyVendor.appendingPathComponent("underscore-min.js").path) {
-        return cwdSequifyVendor
+    // 5. Standard user config skill paths
+    let home = fm.homeDirectoryForCurrentUser
+    candidateLocations.append(home.appendingPathComponent(".gemini/config/skills/sequify/resources/vendor").standardized)
+    candidateLocations.append(home.appendingPathComponent(".gemini/config/skills/diagram/resources/vendor").standardized)
+    candidateLocations.append(home.appendingPathComponent(".agents/skills/sequify/resources/vendor").standardized)
+    
+    for candidate in candidateLocations {
+        if fm.fileExists(atPath: candidate.appendingPathComponent("underscore-min.js").path) {
+            return candidate
+        }
     }
     
     fputs("Error: Could not locate vendor resources directory.\n", stderr)
